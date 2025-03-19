@@ -1,0 +1,497 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Book Recommender</title>
+  <style>
+    :root {
+      --primary: #4a6fa5;
+      --secondary: #166088;
+      --accent: #04bfad;
+      --light: #f5f5f5;
+      --dark: #333;
+      --grey: #888;
+      --shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: var(--light);
+      color: var(--dark);
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 30px;
+      padding: 20px 0;
+      border-bottom: 1px solid #eee;
+    }
+
+    h1 {
+      color: var(--primary);
+      margin-bottom: 10px;
+    }
+
+    .subtitle {
+      color: var(--grey);
+      font-size: 1.1rem;
+    }
+
+    .tabs {
+      display: flex;
+      margin-bottom: 20px;
+      border-bottom: 1px solid #ddd;
+    }
+
+    .tab {
+      padding: 10px 20px;
+      cursor: pointer;
+      background: transparent;
+      border: none;
+      border-bottom: 3px solid transparent;
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--grey);
+      transition: all 0.3s;
+    }
+
+    .tab.active {
+      color: var(--primary);
+      border-bottom: 3px solid var(--primary);
+    }
+
+    .tab:hover:not(.active) {
+      color: var(--secondary);
+      border-bottom: 3px solid #ddd;
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    .search-container {
+      position: relative;
+      margin-bottom: 30px;
+    }
+
+    .search-input {
+      width: 100%;
+      padding: 12px 15px;
+      font-size: 1rem;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      box-shadow: var(--shadow);
+      transition: all 0.3s;
+    }
+
+    .search-input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(74, 111, 165, 0.2);
+    }
+
+    .suggestions {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background-color: white;
+      border: 1px solid #ddd;
+      border-top: none;
+      border-radius: 0 0 5px 5px;
+      max-height: 300px;
+      overflow-y: auto;
+      z-index: 10;
+      box-shadow: var(--shadow);
+      display: none;
+    }
+
+    .suggestion-item {
+      padding: 10px 15px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+
+    .suggestion-item:hover {
+      background-color: #f0f5ff;
+    }
+
+    .results {
+      margin-top: 20px;
+    }
+
+    .selected-book {
+      background-color: white;
+      padding: 20px;
+      border-radius: 5px;
+      box-shadow: var(--shadow);
+      margin-bottom: 20px;
+    }
+
+    .book-title {
+      font-size: 1.4rem;
+      color: var(--primary);
+      margin-bottom: 5px;
+    }
+
+    .recommendation-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 20px;
+    }
+
+    .recommendation-card {
+      background-color: white;
+      border-radius: 5px;
+      padding: 15px;
+      box-shadow: var(--shadow);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .recommendation-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+
+    .recommendation-title {
+      font-size: 1.1rem;
+      margin-bottom: 8px;
+      color: var(--secondary);
+    }
+
+    .similarity-score {
+      display: inline-block;
+      padding: 3px 8px;
+      background-color: #e8f4fd;
+      color: var(--primary);
+      border-radius: 12px;
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+
+    .all-books {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 15px;
+    }
+
+    .book-card {
+      background-color: white;
+      padding: 15px;
+      border-radius: 5px;
+      box-shadow: var(--shadow);
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .book-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      background-color: #f0f5ff;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 20px;
+      color: var(--grey);
+    }
+
+    .pagination {
+      display: flex;
+      justify-content: center;
+      margin-top: 20px;
+      gap: 5px;
+    }
+
+    .page-btn {
+      padding: 5px 10px;
+      background-color: white;
+      border: 1px solid #ddd;
+      border-radius: 3px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .page-btn:hover:not(.active) {
+      background-color: #f0f5ff;
+    }
+
+    .page-btn.active {
+      background-color: var(--primary);
+      color: white;
+      border-color: var(--primary);
+    }
+
+    .no-results {
+      text-align: center;
+      padding: 30px;
+      color: var(--grey);
+    }
+
+    @media (max-width: 768px) {
+      .recommendation-list, .all-books {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Book Recommender</h1>
+      <p class="subtitle">Find your next great read based on books you love</p>
+    </header>
+
+    <div class="tabs">
+      <button class="tab active" data-tab="search">Search & Recommend</button>
+      <button class="tab" data-tab="all-books">Browse All Books</button>
+    </div>
+
+    <div id="search-tab" class="tab-content active">
+      <div class="search-container">
+        <input type="text" id="book-search" class="search-input" placeholder="Search for a book title...">
+        <div id="suggestions" class="suggestions"></div>
+      </div>
+
+      <div class="results" id="results">
+        <!-- Results will be loaded here -->
+      </div>
+    </div>
+
+    <div id="all-books-tab" class="tab-content">
+      <div id="all-books-container" class="all-books">
+        <!-- All books will be loaded here -->
+      </div>
+      <div id="pagination" class="pagination">
+        <!-- Pagination controls will be here -->
+      </div>
+    </div>
+  </div>
+
+  <script>
+      // Dynamically injected list of books from Flask
+    const books = {{ books | tojson }};
+
+    // Define global constants for pagination
+    const BOOKS_PER_PAGE = 20;
+    let currentPage = 1;
+    document.addEventListener('DOMContentLoaded', function() {
+      renderAllBooks(1);
+      setupSearchFunctionality();
+      setupTabSwitching();
+    });
+
+    function getRecommendations(bookId) {
+  const resultsContainer = document.getElementById('results');
+  resultsContainer.innerHTML = '<div class="loading">Finding recommendations...</div>';
+
+  fetch(`/recommend?book_id=${bookId}`)
+    .then(response => {
+      console.log("Response from /recommend:", response);
+      return response.json();
+    })
+    .then(data => {
+      console.log("Data received:", data);
+      if (data.error) {
+        resultsContainer.innerHTML = '<div class="no-results">Error: ' + data.error + '</div>';
+      } else {
+        renderRecommendations({ id: bookId, title: data.selected }, data.recommendations);
+      }
+    })
+    .catch(error => {
+      resultsContainer.innerHTML = '<div class="no-results">Error fetching recommendations.</div>';
+      console.error(error);
+    });
+}
+
+    function setupTabSwitching() {
+      const tabs = document.querySelectorAll('.tab');
+      const tabContents = document.querySelectorAll('.tab-content');
+
+      tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+          // Remove active class from all tabs and contents
+          tabs.forEach(t => t.classList.remove('active'));
+          tabContents.forEach(c => c.classList.remove('active'));
+
+          // Add active class to clicked tab and corresponding content
+          tab.classList.add('active');
+          const tabId = tab.getAttribute('data-tab');
+          document.getElementById(`${tabId}-tab`).classList.add('active');
+
+          // If all-books tab is clicked, refresh the display
+          if (tabId === 'all-books') {
+            renderAllBooks(currentPage);
+          }
+        });
+      });
+    }
+
+    function setupSearchFunctionality() {
+      const searchInput = document.getElementById('book-search');
+      const suggestionsContainer = document.getElementById('suggestions');
+
+      searchInput.addEventListener('input', (e) => {
+        const searchTerm = e.target.value.toLowerCase();
+        const suggestions = books.filter(book =>
+          book.title.toLowerCase().includes(searchTerm)
+        ).slice(0, 10);
+
+        renderSuggestions(suggestions, searchTerm);
+      });
+
+      searchInput.addEventListener('focus', () => {
+        if (searchInput.value.length > 0) {
+          suggestionsContainer.style.display = 'block';
+        }
+      });
+
+      document.addEventListener('click', (e) => {
+        if (!searchInput.contains(e.target) && !suggestionsContainer.contains(e.target)) {
+          suggestionsContainer.style.display = 'none';
+        }
+      });
+    }
+
+    function renderSuggestions(suggestions, searchTerm) {
+      const suggestionsContainer = document.getElementById('suggestions');
+
+      if (searchTerm.length === 0 || suggestions.length === 0) {
+        suggestionsContainer.style.display = 'none';
+        return;
+      }
+
+      suggestionsContainer.innerHTML = '';
+      suggestions.forEach(book => {
+        const div = document.createElement('div');
+        div.className = 'suggestion-item';
+        div.textContent = book.title;
+        div.addEventListener('click', () => {
+          document.getElementById('book-search').value = book.title;
+          suggestionsContainer.style.display = 'none';
+          getRecommendations(book.id);
+        });
+        suggestionsContainer.appendChild(div);
+      });
+
+      suggestionsContainer.style.display = 'block';
+    }
+
+    function renderAllBooks(page) {
+      const container = document.getElementById('all-books-container');
+      const paginationContainer = document.getElementById('pagination');
+      const startIdx = (page - 1) * BOOKS_PER_PAGE;
+      const endIdx = Math.min(startIdx + BOOKS_PER_PAGE, books.length);
+      const booksToShow = books.slice(startIdx, endIdx);
+
+      // Clear container
+      container.innerHTML = '';
+
+      // Add books
+      booksToShow.forEach(book => {
+        const div = document.createElement('div');
+        div.className = 'book-card';
+        div.textContent = book.title;
+        div.addEventListener('click', () => {
+          getRecommendations(book.id);
+          // Switch to the search tab
+          document.querySelector('.tab[data-tab="search"]').click();
+          document.getElementById('book-search').value = book.title;
+        });
+        container.appendChild(div);
+      });
+
+      // Render pagination
+      renderPagination(page, Math.ceil(books.length / BOOKS_PER_PAGE), paginationContainer);
+    }
+
+    function renderPagination(currentPage, totalPages, container) {
+      container.innerHTML = '';
+
+      // Previous button
+      if (currentPage > 1) {
+        const prevBtn = document.createElement('button');
+        prevBtn.className = 'page-btn';
+        prevBtn.textContent = '«';
+        prevBtn.addEventListener('click', () => renderAllBooks(currentPage - 1));
+        container.appendChild(prevBtn);
+      }
+
+      // Page numbers
+      const startPage = Math.max(1, currentPage - 2);
+      const endPage = Math.min(totalPages, currentPage + 2);
+
+      for (let i = startPage; i <= endPage; i++) {
+        const pageBtn = document.createElement('button');
+        pageBtn.className = 'page-btn';
+        if (i === currentPage) {
+          pageBtn.classList.add('active');
+        }
+        pageBtn.textContent = i;
+        pageBtn.addEventListener('click', () => renderAllBooks(i));
+        container.appendChild(pageBtn);
+      }
+
+      // Next button
+      if (currentPage < totalPages) {
+        const nextBtn = document.createElement('button');
+        nextBtn.className = 'page-btn';
+        nextBtn.textContent = '»';
+        nextBtn.addEventListener('click', () => renderAllBooks(currentPage + 1));
+        container.appendChild(nextBtn);
+      }
+    }
+
+    function renderRecommendations(selectedBook, recommendations) {
+  const resultsContainer = document.getElementById('results');
+  console.log("Rendering recommendations for:", selectedBook, "with recommendations:", recommendations);
+
+  const html = `
+    <div class="selected-book">
+      <h2 class="book-title">${selectedBook.title}</h2>
+      <p>You selected this book</p>
+    </div>
+    <h3>Recommended Books</h3>
+    <div class="recommendation-list">
+      ${recommendations.map(rec => `
+        <div class="recommendation-card" data-id="${rec.id}">
+          <h3 class="recommendation-title">${rec.title}</h3>
+          <span class="similarity-score">Match: ${rec.similarity}</span>
+        </div>
+      `).join('')}
+    </div>
+  `;
+
+  resultsContainer.innerHTML = html;
+
+  // Add click event to recommendation cards for further interactions.
+  document.querySelectorAll('.recommendation-card').forEach(card => {
+    card.addEventListener('click', () => {
+      const bookId = parseInt(card.getAttribute('data-id'));
+      document.getElementById('book-search').value = books[bookId].title;
+      getRecommendations(bookId);
+    });
+  });
+}
+
+  </script>
+</body>
+</html>
